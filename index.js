@@ -78,7 +78,7 @@ async function run() {
         // });
 
         // user post
-        app.post('/users', async (req, res) => {
+        app.post('/users', verifyFBToken, async (req, res) => {
             const { email } = req.body
             if (!email) {
                 return res.status(404).json({ error: 'user not fount' });
@@ -112,7 +112,7 @@ async function run() {
         })
 
         // get user parcels
-        app.get('/parcels', async (req, res) => {
+        app.get('/parcels', verifyFBToken, async (req, res) => {
             const { email } = req.query;
 
             // If email is provided, match parcels created by that user
@@ -131,7 +131,7 @@ async function run() {
         });
 
         // get parcels id
-        app.get('/parcels/:id', async (req, res) => {
+        app.get('/parcels/:id', verifyFBToken, async (req, res) => {
 
             try {
                 const id = req.params.id;
@@ -263,7 +263,7 @@ async function run() {
             const { email } = req.query;
 
             if (req.decoded.email !== userEmail) {
-                return res.status(403).send({message: 'forbidden access'})
+                return res.status(403).send({ message: 'forbidden access' })
             }
 
             if (!email) {
