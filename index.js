@@ -3,6 +3,8 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const { MongoClient, ObjectId } = require('mongodb');
 
+const admin = require("firebase-admin");
+
 
 
 // Config
@@ -18,6 +20,13 @@ const uri = `mongodb+srv://${process.env.USER}:${process.env.PASSWORD}@cluster0.
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+
+const serviceAccount = require("./Firebase_key.json");
+
+admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount)
+});
 
 // MongoDB Setup
 const client = new MongoClient(uri, {
@@ -35,6 +44,27 @@ async function run() {
 
 
         // custom middleware
+        const verifyFBToken = async (req, res, next) => {
+            const authHeader = req.headers.authorization;
+            if (!authHeader) {
+                return res.status(401).send({ message: 'unauthorized access' })
+            }
+
+            const token = authHeader.split(' ')[1];
+            if (!token) {
+                return res.status(401).send({ message: 'unauthorized access' })
+            }
+
+            // verify the token
+            try {
+                const decoded = await admin.auth().verifyIdToken(token);
+                req.decoded = decoded;
+                next()
+            }
+            catch (error) {
+                return res.status(403).send({ message: 'forbidden access' })
+            }
+        }
 
         // Sample Route
         app.get('/', (req, res) => {
@@ -229,8 +259,12 @@ async function run() {
 
         // payment history
         // Get payment history for a specific user (sorted by latest first)
-        app.get('/payments', async (req, res) => {
+        app.get('/payments', verifyFBToken, async (req, res) => {
             const { email } = req.query;
+
+            if (req.decoded.email !== userEmail) {
+                return res.status(403).send({message: 'forbidden access'})
+            }
 
             if (!email) {
                 return res.status(400).json({ error: 'Email is required' });
