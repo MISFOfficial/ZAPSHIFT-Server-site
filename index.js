@@ -122,7 +122,7 @@ async function run() {
                 const parcels = await parcelCollection
                     .find(query)
                     .sort({ creation_date: -1 }) // Sort by newest first
-                    .toArray();
+                    .toArray(); //converting to arry
 
                 res.send(parcels);
             } catch (error) {
