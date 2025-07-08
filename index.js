@@ -262,7 +262,8 @@ async function run() {
         app.get('/payments', verifyFBToken, async (req, res) => {
             const { email } = req.query;
 
-            if (req.decoded.email !== userEmail) {
+
+            if (req.decoded.email !== email) {
                 return res.status(403).send({ message: 'forbidden access' })
             }
 
