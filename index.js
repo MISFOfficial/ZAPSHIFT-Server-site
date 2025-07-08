@@ -40,6 +40,7 @@ async function run() {
         const db = client.db('parcelDB');
         const parcelCollection = db.collection('parcels');
         const usersCollection = db.collection('users');
+        const ridersCollection = db.collection('riders');
         const paymentHistoryCollection = db.collection('payments')
 
 
@@ -284,6 +285,57 @@ async function run() {
             }
         });
 
+        app.get('/riders/pending', async (req, res) => {
+            try {
+                const filter = { status: 'pending' };
+                const riders = await ridersCollection.find(filter).toArray();
+                res.send(riders);
+            } catch (error) {
+                console.error('Error fetching pending riders:', error);
+                res.status(500).json({ error: 'Failed to fetch pending riders' });
+            }
+        });
+
+        // create a Rider
+        app.post('/riders', async (req, res) => {
+            const newRider = req.body;
+            try {
+                const result = await ridersCollection.insertOne(newRider);
+                res.status(201).send({ result, insertedId: result.insertedId });
+            } catch (err) {
+                console.error("❌ Insert Error:", err);
+                res.status(500).send({ error: 'Failed to submit rider application' });
+            }
+        });
+
+        // updatea rider status
+        app.patch('/riders/:id/status', async (req, res) => {
+            const { id } = req.params;
+            const { status } = req.body;
+            const query = { _id: new ObjectId(id) };
+
+            // Optional: validate status
+            // const validStatuses = ['approved', 'cancelled', 'pending'];
+            // if (!validStatuses.includes(status)) {
+            //     return res.status(400).json({ error: 'Invalid status value' });
+            // }
+
+            try {
+                const result = await ridersCollection.updateOne(
+                    query,
+                    { $set: { status } }
+                );
+
+                if (result.modifiedCount === 0) {
+                    return res.status(404).json({ error: 'Rider not found or status not changed' });
+                }
+
+                res.status(200).json({ message: 'Rider status updated successfully' });
+            } catch (error) {
+                console.error('PATCH /riders/:id/status error:', error);
+                res.status(500).json({ error: 'Internal server error' });
+            }
+        });
 
         // create payment
         app.post('/create-payment-intent', async (req, res) => {
